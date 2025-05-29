@@ -35,8 +35,47 @@ pipeline{
                 }
             }
 
+        }        
+        stage('Upload Artifact to Nexus') {
+            steps {
+                script {
+                    // Extract version from pom.xml
+                    def version = sh(
+                        script: "./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout",
+                        returnStdout: true
+                    ).trim()
+
+                    // Choose repository based on version
+                    def repository = version.contains('SNAPSHOT') ? 'maven-snapshots' : 'maven-releases'
+
+                    // Derive artifactId and JAR file
+                    def jarFile = sh(
+                        script: "ls target/*.jar | grep spring-petclinic | head -n 1",
+                        returnStdout: true
+                    ).trim()
+
+                    def artifactId = 'spring-petclinic' // This must match the filename and pom.xml <artifactId>
+
+                    // Upload to Nexus
+                    nexusArtifactUploader(
+                        nexusVersion: 'nexus3',
+                        protocol: 'http',
+                        nexusUrl: 'nexus:8081',
+                        groupId: 'com.example',
+                        version: version,
+                        repository: repository,
+                        credentialsId: 'nexus-creds',
+                        artifacts: [
+                            [
+                                artifactId: artifactId,
+                                classifier: '',
+                                file: jarFile,
+                                type: 'jar'
+                            ]
+                        ]
+                    )
+                }
+            }
         }
-
-
         }
     }
