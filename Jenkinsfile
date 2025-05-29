@@ -4,6 +4,7 @@ pipeline{
 
             stage("build"){
                 steps{
+                    sh 'rm -rf .scannerwork'
                     sh "./mvnw install"
                 }
             }
